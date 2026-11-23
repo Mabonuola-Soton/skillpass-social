@@ -1,0 +1,27 @@
+name: Fetch licensed people photos
+on:
+  push:
+    paths: ['2026-people/sources.txt']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download from Pexels
+        run: |
+          cd 2026-people
+          while read -r id name; do
+            [ -z "$id" ] && continue
+            curl -fsSL "https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1600" -o "${name}.jpg" || echo "failed ${id}"
+          done < sources.txt
+          ls -la
+      - name: Commit
+        run: |
+          git config user.name "skillpass-bot"
+          git config user.email "bot@getskillpass.com"
+          git add 2026-people/*.jpg
+          git commit -m "People photos from Pexels" || echo "nothing to commit"
+          git push
