@@ -1,0 +1,28 @@
+name: Fetch generated audio
+on:
+  push:
+    paths: ['audio/sources.txt']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download
+        run: |
+          cd audio
+          while read -r url name; do
+            [ -z "$url" ] && continue
+            case "$url" in https://d8j0ntlcm91z4.cloudfront.net/*) ;; *) echo "skip $url"; continue;; esac
+            [ -f "$name" ] || curl -fsSL "$url" -o "$name" || echo "failed $name"
+          done < sources.txt
+          ls -la
+      - name: Commit
+        run: |
+          git config user.name "skillpass-bot"
+          git config user.email "bot@getskillpass.com"
+          git add audio/*.mp3 || true
+          git commit -m "Fetch generated audio" || echo "nothing to commit"
+          git push
